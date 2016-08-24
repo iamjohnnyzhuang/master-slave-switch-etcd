@@ -8,8 +8,40 @@
     <artifactId>master-slave-switch</artifactId>
     <version>1.0-SNAPSHOT</version>
 
-    <dependencies>
+    <profile>
+        <id>jdk-1.8</id>
+        <activation>
+            <jdk>1.8</jdk><!--指定JDK版本是1.8时自动激活-->
+        </activation>
+        <repositories>
+            <repository>
+                <id>nexus</id>
+                <name>local private nexus</name>
+                <url>http://maven.oschina.net/content/groups/public/</url>
+                <releases>
+                    <enabled>true</enabled>
+                </releases>
+                <snapshots>
+                    <enabled>false</enabled>
+                </snapshots>
+            </repository>
+        </repositories>
+        <pluginRepositories>
+            <pluginRepository>
+                <id>nexus</id>
+                <name>local private nexus</name>
+                <url>http://maven.oschina.net/content/groups/public/</url>
+                <releases>
+                    <enabled>true</enabled>
+                </releases>
+                <snapshots>
+                    <enabled>false</enabled>
+                </snapshots>
+            </pluginRepository>
+        </pluginRepositories>
+    </profile>
 
+    <dependencies>
         <dependency>
             <groupId>org.apache.httpcomponents</groupId>
             <artifactId>httpasyncclient</artifactId>

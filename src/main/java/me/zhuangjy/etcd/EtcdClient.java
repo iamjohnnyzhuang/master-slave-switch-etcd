@@ -2,6 +2,7 @@ package me.zhuangjy.etcd;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.InterfaceAddress;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.util.ArrayList;
@@ -66,7 +67,7 @@ public class EtcdClient {
         URI uri = buildKeyUri("v2/keys", key, "");
         HttpGet request = new HttpGet(uri);
 
-        EtcdResult result = syncExecute(request, new int[] { 200, 404 }, 100);
+        EtcdResult result = syncExecute(request, new int[]{200, 404}, 100);
         if (result.isError()) {
             if (result.errorCode == 100) {
                 return null;
@@ -82,7 +83,7 @@ public class EtcdClient {
         URI uri = buildKeyUri("v2/keys", key, "");
         HttpDelete request = new HttpDelete(uri);
 
-        return syncExecute(request, new int[] { 200, 404 });
+        return syncExecute(request, new int[]{200, 404});
     }
 
     /**
@@ -103,7 +104,7 @@ public class EtcdClient {
             data.add(new BasicNameValuePair("ttl", Integer.toString(ttl)));
         }
 
-        return set0(key, data, new int[] { 200, 201 });
+        return set0(key, data, new int[]{200, 201});
     }
 
     /**
@@ -112,26 +113,27 @@ public class EtcdClient {
     public EtcdResult createDirectory(String key) throws EtcdClientException {
         List<BasicNameValuePair> data = Lists.newArrayList();
         data.add(new BasicNameValuePair("dir", "true"));
-        return set0(key, data, new int[] { 200, 201 });
+        return set0(key, data, new int[]{200, 201});
     }
 
     /**
      * Lists a directory
      */
     public List<EtcdNode> listDirectory(String key) throws EtcdClientException {
-      EtcdResult result = get(key + "/");
-      if (result == null || result.node == null) {
-        return null;
-      }
-      return result.node.nodes;
+        EtcdResult result = get(key + "/");
+        if (result == null || result.node == null) {
+            return null;
+        }
+        return result.node.nodes;
     }
+
     /**
      * Delete a directory
      */
     public EtcdResult deleteDirectory(String key) throws EtcdClientException {
         URI uri = buildKeyUri("v2/keys", key, "?dir=true");
         HttpDelete request = new HttpDelete(uri);
-        return syncExecute(request, new int[] { 202 });
+        return syncExecute(request, new int[]{202});
     }
 
     /**
@@ -142,7 +144,20 @@ public class EtcdClient {
         data.add(new BasicNameValuePair("value", value));
         data.add(new BasicNameValuePair("prevValue", prevValue));
 
-        return set0(key, data, new int[] { 200, 412 }, 101);
+        return set0(key, data, new int[]{200, 412}, 101);
+    }
+
+    /**
+     * sets a key to a new value, if the value is exist
+     */
+    public EtcdResult cas(String key, String value, String exist, Integer ttl) throws EtcdClientException {
+        List<BasicNameValuePair> data = Lists.newArrayList();
+        data.add(new BasicNameValuePair("prevExist", exist));
+        data.add(new BasicNameValuePair("value", value));
+        if (ttl != null) {
+            data.add(new BasicNameValuePair("ttl", ttl.toString()));
+        }
+        return set0(key, data, new int[]{200, 412, 201}, 101);
     }
 
     /**
@@ -156,18 +171,18 @@ public class EtcdClient {
      * Watches the given subtree
      */
     public ListenableFuture<EtcdResult> watch(String key, Long index, boolean recursive) throws EtcdClientException {
-    	String suffix = "?wait=true";
-    	if (index != null) {
-    		suffix += "&waitIndex=" + index;
-    	}
-    	if (recursive) {
-    		suffix += "&recursive=true";
-    	}
+        String suffix = "?wait=true";
+        if (index != null) {
+            suffix += "&waitIndex=" + index;
+        }
+        if (recursive) {
+            suffix += "&recursive=true";
+        }
         URI uri = buildKeyUri("v2/keys", key, suffix);
 
         HttpGet request = new HttpGet(uri);
 
-        return asyncExecute(request, new int[] { 200 });
+        return asyncExecute(request, new int[]{200});
     }
 
     /**
@@ -203,7 +218,7 @@ public class EtcdClient {
         URI uri = buildKeyUri("v2/keys", key, "/");
         HttpGet request = new HttpGet(uri);
 
-        EtcdResult result = syncExecute(request, new int[] { 200 });
+        EtcdResult result = syncExecute(request, new int[]{200});
         return result;
     }
 

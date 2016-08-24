@@ -1,38 +1,56 @@
 package me.zhuangjy.main;
 
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import me.zhuangjy.etcd.EtcdClient;
 import me.zhuangjy.etcd.EtcdClientException;
-import me.zhuangjy.etcd.EtcdResult;
 import me.zhuangjy.util.Common;
-import me.zhuangjy.util.HttpClientUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by zhuangjy on 2016/8/23.
+ * 通过设置等待时间不断去获取分布式锁，如果获取了在正常服务时应该更新心跳防止因为服务挂掉没有释放锁
  */
 public class Master {
-    public static void main(String[] args) throws EtcdClientException {
-        //获取分布式锁
-        final EtcdClient client = new EtcdClient(URI.create(Common.url[0]));
-        final String key = "/watch";
-        ListenableFuture<EtcdResult> listenableFuture = client.watch(key);
-        Futures.addCallback(listenableFuture, new FutureCallback<EtcdResult>() {
-            public void onSuccess(EtcdResult etcdResult) {
-                System.out.println(etcdResult);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Master.class);
+    public static void main(String[] args) throws InterruptedException {
+        while (true) {
+            LOGGER.info("Master服务正在注册锁...");
+            final EtcdClient client = new EtcdClient(URI.create(Common.URL[0]));
+            try {
+                client.cas(Common.LOCK, "master", "false", Common.WAIT);
+            } catch (EtcdClientException e) {
+                LOGGER.info("注册失败...Master服务进入等待时间");
+                TimeUnit.SECONDS.sleep(Common.WAIT);
+                continue;
             }
-
-            public void onFailure(Throwable throwable) {
-                throwable.printStackTrace();
+            LOGGER.info("Master服务成功获取锁，正在进行服务...");
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    //超时时间过半后就更新心跳
+                    try {
+                        TimeUnit.SECONDS.sleep(Common.WAIT / 2);
+                        client.cas(Common.LOCK, "master", "true", Common.WAIT);
+                        LOGGER.info("Master发送心跳...");
+                    } catch (InterruptedException e) {
+                        LOGGER.error("",e);
+                    } catch (EtcdClientException e) {
+                        LOGGER.error("",e);
+                    }
+                }
+            }).start();
+            //模拟正常工作
+            TimeUnit.HOURS.sleep(1);
+            //工作结束后可以释放锁动态分配任务
+            LOGGER.info("Master服务结束,正在释放锁...");
+            try {
+                client.delete("lock");
+            } catch (EtcdClientException e) {
+                LOGGER.error("",e);
             }
-        });
-
-//        EtcdClient client2  = new EtcdClient(URI.create(Common.url[0]));
-//        EtcdResult result = client2.set(key, "hello2");
-//        System.out.println(result);
-//        EtcdResult result2 = client2.set(key, "hello3");
+        }
     }
 }
