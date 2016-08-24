@@ -37,6 +37,11 @@ public class EtcdClientException extends IOException {
 
     public boolean isEtcdError(int etcdCode) {
         return (this.result != null && this.result.errorCode != null && etcdCode == this.result.errorCode);
-
     }
+
+    public boolean isNetError(){
+        return result==null;
+    }
+
+
 }

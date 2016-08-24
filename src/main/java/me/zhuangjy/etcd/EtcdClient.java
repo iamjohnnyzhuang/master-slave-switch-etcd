@@ -139,18 +139,20 @@ public class EtcdClient {
     /**
      * Sets a key to a new value, if the value is a specified value
      */
-    public EtcdResult cas(String key, String prevValue, String value) throws EtcdClientException {
+    public EtcdResult casVal(String key, String prevValue, String value,Integer ttl) throws EtcdClientException {
         List<BasicNameValuePair> data = Lists.newArrayList();
         data.add(new BasicNameValuePair("value", value));
         data.add(new BasicNameValuePair("prevValue", prevValue));
-
-        return set0(key, data, new int[]{200, 412}, 101);
+        if (ttl != null) {
+            data.add(new BasicNameValuePair("ttl", ttl.toString()));
+        }
+        return set0(key, data, new int[]{200, 412,201}, 101);
     }
 
     /**
      * sets a key to a new value, if the value is exist
      */
-    public EtcdResult cas(String key, String value, String exist, Integer ttl) throws EtcdClientException {
+    public EtcdResult casExist(String key, String value, String exist, Integer ttl) throws EtcdClientException {
         List<BasicNameValuePair> data = Lists.newArrayList();
         data.add(new BasicNameValuePair("prevExist", exist));
         data.add(new BasicNameValuePair("value", value));
@@ -458,4 +460,7 @@ public class EtcdClient {
         }
     }
 
+    public URI getBaseUri() {
+        return baseUri;
+    }
 }
