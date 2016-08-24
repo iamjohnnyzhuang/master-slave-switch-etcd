@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
  * Created by zhuangjy on 2016/8/23.
  */
 public class Slave {
-    private static final Logger LOGGER = LoggerFactory.getLogger(Slave.class);
+    private final static Logger LOGGER = LoggerFactory.getLogger(Slave.class);
 
     public static void main(String[] args) throws InterruptedException {
         while (true) {
